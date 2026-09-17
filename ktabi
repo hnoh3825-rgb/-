@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كتاب حياتي - يومياتي</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #c5a059;
+            --border-color: #333;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+        h1 {
+            color: var(--accent-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--accent-color);
+        }
+        input[type="date"], textarea {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 180px;
+            line-height: 1.6;
+        }
+        input[type="date"]:focus, textarea:focus {
+            border-color: var(--accent-color);
+        }
+        .btn {
+            background-color: var(--accent-color);
+            color: #121212;
+            border: none;
+            padding: 12px 20px;
+            border-8px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .entries-list {
+            margin-top: 30px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+        .entry-card {
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-right: 4px solid var(--accent-com);
+            border-right: 4px solid var(--accent-color);
+        }
+        .entry-date {
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .entry-text {
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>كتاب حياتي</h1>
+        
+        <div class="input-group">
+            <label for="entryDate">تاريخ اليوم</label>
+            <input type="date" id="entryDate">
+        </div>
+
+        <div class="input-group">
+            <label for="entryContent">ماذا حدث اليوم؟ اكتب تفاصيل يومك ورؤيتك...</label>
+            <textarea id="entryContent" placeholder="اكتب يومياتك هنا بكل راحة..."></textarea>
+        </div>
+
+        <button class="btn" onclick="saveEntry()">حفظ اليومية</button>
+        
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="exportData()">تصدير كملف (نسخة احتياطية)</button>
+        </div>
+
+        <div class="entries-list" id="entriesList">
+            <!-- ستظهر اليوميات المحفوظة هنا -->
+        </div>
+    </div>
+
+    <script>
+        // تحديد تاريخ اليوم تلقائياً عند فتح الصفحة
+        document.getElementById('entryDate').valueAsDate = new Date();
+
+        function loadEntries() {
+            const entriesList = document.getElementById('entriesList');
+            entriesList.innerHTML = '';
+            
+            let entries = JSON.parse(localStorage.getItem('my_life_journal')) || [];
+            
+            // ترتيب الأيام من الأحدث للأقدم
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (entries.length === 0) {
+                entriesList.innerHTML = '<p style="text-align: center; color: #777; font-size: 0.9rem;">لا توجد يوميات مسجلة حتى الآن. ابدأ بكتابة يومك الأول!</p>';
+                return;
+            }
+
+            entries.forEach((entry, index) => {
+                const card = document.createElement('div');
+                card.className = 'entry-card';
+                card.innerHTML = `
+                    <div class="entry-date">${entry.date}</div>
+                    <div class="entry-text">${escapeHtml(entry.content)}</div>
+                `;
+                entriesList.appendChild(card);
+            });
+        }
+
+        function saveEntry() {
+            const date = document.getElementById('entryDate').value;
+            const content = document.getElementById('entryContent').value;
+
+            if (!date || !content.trim()) {
+                alert('الرجاء التأكد من إدخال التاريخ ومحتوى اليومية.');
+                return;
+            }
+
+            let entries = JSON.parse(localStorage.getItem('my_life_junction')) || [];
+            // تصحيح مفتاح التخزين
+            entries = JSON.parse(localStorage.getItem('my_life_journal')) || [];
+
+            // التحقق إذا كان هناك يومية لنفس التاريخ لتحديثها أو إضافتها
+            const existingIndex = entries.findIndex(e => e.date === date);
+            if (existingIndex > -1) {
+                if (confirm('توجد يومية مسجلة مسبقاً لهذا التاريخ. هل تريد تحديثها؟')) {
+                    entries[existingIndex].content = content;
+                } else {
+                    return;
+                }
+            } else {
+                entries.push({ date, content });
+            }
+
+            localStorage.setItem('my_life_journal', JSON.stringify(entries));
+            document.getElementById('entryContent').value = '';
+            loadEntries();
+            alert('تم حفظ يوميتك بنجاح وكأنها جزء من كتابك!');
+        }
+
+        function exportData() {
+            let entries = JSON.parse(localStorage.getItem('my_life_journal')) || [];
+            if (entries.length === 0) {
+                alert('لا توجد بيانات لتصديرها.');
+                return;
+            }
+            
+            let textData = entries.map(e => `التاريخ: ${e.date}\n-----------------------------------\n${e.content}\n\n===================================\n\n`).join('');
+            
+            const blob = new Blob([textData], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'كتاب_حياتي_يوميات.txt';
+            a.click();
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // تحميل اليوميات عند فتح الصفحة
+        window.onload = loadEntries;
+    </script>
+</body>
+</html>
